@@ -1,5 +1,5 @@
     const {google} = require("googleapis");
-    const { Client, GatewayIntentBits } = require('discord.js');
+    const { Client, GatewayIntentBits, ComponentAssertions } = require('discord.js');
     const phantom = require('phantom');
     const config = require('./config.json');
     const prefix = "!";
@@ -28,7 +28,6 @@
         GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.MessageContent,
     ] });
-
     
     // Register an event so that when the bot is ready, it will log a messsage to the terminal
     client.on("messageCreate", (message) => {
@@ -42,17 +41,40 @@
             var pages = message.content.split(" ")[1];
             message.reply("Starting the creation of CSV from "+ pages + " pages\n" + "https://docs.google.com/spreadsheets/d/1kEB5iktSLrQOyQ_2ZNkDIh71aRgGZ88HjbGi08Eycm0/edit?usp=sharing");
             StartSearch(parseInt(pages));
+        }else if(message.content.startsWith("!test")){
+            var charId = message.content.split(" ")[1];
+            TestSkillCount(charId);
         }
     });
 
+    async function TestSkillCount(charId){
+        const instance = await phantom.create(['--ignore-ssl-errors=yes', '--load-images=no']);
+        const page = await instance.createPage();
+        const status = await page.open(playerURL+charId);
+    
+        if (status !== 'success') {
+        console.error(status);
+        await instance.exit();
+        return;
+        }
+    
+        const content = await page.property('content');
+        await instance.exit();
+    
+        //string manipulations here
+        //var basicInfo = content.split("{")[1];
+        var result = content.replace(/&quot;/g,'"').split("data-page=\"")[1].split("\"></div>")[0];
+        var skillCount = JSON.parse(result.split("skill_count\":")[1].split("\,\"kill_log")[0]);
+        console.log(skillCount);
+    }
+
     async function StartSearch(pages){ 
         var playerIDs = [];
-
-        for(var i = 1; i < pages+1; i++){  
-            console.log("Scanning page:"+i);     
+        //for(var i = 1; i < pages+1; i++){  
+            console.log("Scanning page:"+pages);     
             const instance = await phantom.create(['--ignore-ssl-errors=yes', '--load-images=no']);
             const page = await instance.createPage();
-            const status = await page.open(rankURL+i);
+            const status = await page.open(rankURL+pages);
 
             if (status !== 'success') {
                 console.error(status);
@@ -69,7 +91,7 @@
                 var result = match[0].split(":")[1];
                 playerIDs.push(result);
             }
-        }
+        //}
 
         for(var x = 0; x < playerIDs.length; x++){
             const instance = await phantom.create(['--ignore-ssl-errors=yes', '--load-images=no']);
@@ -121,8 +143,10 @@
                 HighWizardRow(player, skillCount);
             }else if(player.class == "4012"){
                 SniperRow(player, skillCount);
-            }else if(player.class = "4018"){
+            }else if(player.class == "4018"){
                 CreatorRow(player, skillCount);
+            }else if(player.class == "4015"){
+                PaladinRow(player, skillCount);
             }
         }
         console.log("Total Players: " +playerIDs.length);
@@ -248,6 +272,46 @@
         addRow("Chem DD", playerRow);        
     }
 
+    function PaladinRow(player, skillCount){
+       
+        var obj = JSON.stringify(skillCount);
+        var sac = 0, provoke = 0, endure =0, providence =0, pressure = 0;
+        
+        if(obj.includes("\id\":255")){
+            sac =  obj.split("\"id\":255,\"count\":")[1].split("}")[0];
+        }        
+        if(obj.includes("\id\":6")){
+            provoke =  obj.split("\"id\":6,\"count\":")[1].split("}")[0];
+        }              
+        if(obj.includes("\id\":8")){
+            endure =  obj.split("\"id\":8,\"count\":")[1].split("}")[0];
+        }               
+        if(obj.includes("\id\":256")){
+            providence =  obj.split("\"id\":256,\"count\":")[1].split("}")[0];
+        }      
+        if(obj.includes("\id\":367")){
+            pressure =  obj.split("\"id\":367,\"count\":")[1].split("}")[0];
+        }
+
+        var playerRow = {
+            "values": [
+                [
+                    player.guild,
+                    player.name,
+                    player.damage_taken,
+                    sac,
+                    provoke,
+                    endure,
+                    providence,
+                    pressure,
+                    player.death,
+                    player.damage_taken/ player.death,
+                ]
+            ]
+        }
+        addRow("Paladin", playerRow);        
+    }
+
     function getPlayerRow(player){
         var playerRow = {
             "values": [
@@ -279,7 +343,6 @@
         }
 
         return playerRow;
-
     }
     
     // client.login logs the bot in and sets it up for use. You'll enter your token here.
