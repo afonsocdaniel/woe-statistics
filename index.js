@@ -27,10 +27,10 @@
     });
 
     async function startCrawling(pages){ 
+        console.log("Starting...");
         var playerIDs = [];        
         //to-do - uncomment this to search all pages        
         //for(var i = 1; i < pages+1; i++){  
-            console.log("Scanning page:"+pages);     
             const instance = await phantom.create(['--ignore-ssl-errors=yes', '--load-images=no']);
             const page = await instance.createPage();
             const status = await page.open(rankURL+pages);
@@ -69,6 +69,7 @@
             var result = content.replace(/&quot;/g,'"').split("data-page=\"")[1].split("\"></div>")[0];
             var basicInfo = JSON.parse(result.split("basic_info\":[")[1].split("]\,\"skill_count\"")[0]);
             var skillInfo = result.split("skill_count\":")[1].split("\,\"kill_log")[0];
+
         
             addPlayer(basicInfo, skillInfo);
         }
@@ -93,7 +94,7 @@
             yellow_gemstone: basicInfo.yellow_gemstones,
             red_gemstone: basicInfo.yellow_gemstones,
             blue_gemstone: basicInfo.blue_gemstones,
-            acid_demonstration: basicInfo.acid_demonstrations,
+            acid_demonstration: basicInfo.acid_demostration,
             support_skills: basicInfo.support_skills_used,
             healing: basicInfo.healing_done,
             wrong_support_skills: basicInfo.wrong_support_skills_used,
@@ -127,7 +128,7 @@
     function addHW(player, skillInfo){
         var meteorStorm = getSkill(SKILL.METEOR_STORM, skillInfo);
 
-        if(meteorStorm > 0){
+        if(parseInt(meteorStorm) > 0){
             //add HW DD
             var playerRow = {
                 "values": [
@@ -183,10 +184,7 @@
         var mindBreaker = getSkill(SKILL.MIND_BREAKER, skillInfo);
         var fiberLock = getSkill(SKILL.FIBER_LOCK, skillInfo);
 
-        console.log(dispel,landProtector,mindBreaker,fiberLock);
-
         if( parseInt(dispel) >= parseInt(landProtector)){
-            console.log("adding prof fs " + dispel, landProtector);
             //Add Prof FS
             var playerRow = {
                 "values": [
@@ -206,15 +204,14 @@
         } else{
             //Add PROF DLP
             //to-do
-            console.log("adding prof dlp "+ dispel, landProtector);
         }   
     }
 
     function addCreator(player, skillInfo){
     
-        var acidDemonstration = getSkill(SKILL.ACID_DEMONSTRATION, skillInfo);
-
-        if(acidDemonstration > 0){
+        var acidDemostration = getSkill(SKILL.ACID_DEMOSTRATION, skillInfo);
+        
+        if(parseInt(acidDemostration) > 0){
             //Add Chem DD
             var playerRow = {
                 "values": [
@@ -222,13 +219,13 @@
                         player.guild,
                         player.name,
                         player.damage_done,
-                        acidDemonstration,
+                        acidDemostration,
                         player.kill,
                         player.death,
-                        player.damage_done / acidDemonstration,
-                        player.kill / acidDemonstration,
+                        player.damage_done / acidDemostration,
+                        player.kill / acidDemostration,
                         player.damage_done / player.kill,
-                        (player.damage_done / acidDemonstration) / player.kill,
+                        (player.damage_done / acidDemostration) / player.kill,
                     ]
                 ]
             }
