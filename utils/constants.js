@@ -35,7 +35,7 @@ const SKILL = {
     PNEUMA: 25,
     SUFFRAGIUM: 67,
     IMPOSITIO: 66,
-    GLORIA: 88,
+    GLORIA: 75,
 }
 
 const rankURL = "https://playxro.net/rankings/woe?page=";
