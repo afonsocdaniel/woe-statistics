@@ -3,6 +3,7 @@
     const phantom = require('phantom');
     const config = require('./config.json');
     const {JOB, SKILL, playerURL, rankURL, prefix} = require('./utils/constants');
+const { jobs } = require("googleapis/build/src/apis/jobs");
 
     const client = new Client({ intents: [
         GatewayIntentBits.Guilds,
@@ -30,10 +31,11 @@
         console.log("Starting...");
         var playerIDs = [];        
         //to-do - uncomment this to search all pages        
-        //for(var i = 1; i < pages+1; i++){  
+        for(var i = 1; i < pages+1; i++){  
+            console.log("Crawling on page:"+i);
             const instance = await phantom.create(['--ignore-ssl-errors=yes', '--load-images=no']);
             const page = await instance.createPage();
-            const status = await page.open(rankURL+pages);
+            const status = await page.open(rankURL+i);
 
             if (status !== 'success') {
                 console.error(status);
@@ -50,7 +52,7 @@
                 var result = match[0].split(":")[1];
                 playerIDs.push(result);
             }
-        //}
+        }
 
         for(var x = 0; x < playerIDs.length; x++){
             const instance = await phantom.create(['--ignore-ssl-errors=yes', '--load-images=no']);
@@ -94,7 +96,7 @@
             yellow_gemstone: basicInfo.yellow_gemstones,
             red_gemstone: basicInfo.yellow_gemstones,
             blue_gemstone: basicInfo.blue_gemstones,
-            acid_demonstration: basicInfo.acid_demostration,
+            acid_demostration: basicInfo.acid_demostration,
             support_skills: basicInfo.support_skills_used,
             healing: basicInfo.healing_done,
             wrong_support_skills: basicInfo.wrong_support_skills_used,
@@ -105,6 +107,9 @@
 
         addRow("Players", getPlayerRow(player));
         switch(player.class){
+            case JOB.HIGH_PRIEST:
+                addHP(player, skillInfo);
+                break;
             case JOB.HIGH_WIZARD:
                 addHW(player, skillInfo);
                 break;
@@ -120,8 +125,48 @@
             case JOB.PALADIN:
                 addPaladin(player, skillInfo);     
                 break;
+            case JOB.GYPSY:
+                addGypsy(player,skillInfo);
+                break;
+            
             //to-do add Gypsy and HP
         }
+
+    }
+
+    
+    function addHP(player, skillInfo){
+        var blessing = getSkill(SKILL.BLESSING, skillInfo);
+        var agi = getSkill(SKILL.AGI, skillInfo);
+        var recovery = getSkill(SKILL.RECOVERY, skillInfo);
+        var lex = getSkill(SKILL.LEX_AETHERNA, skillInfo);
+        var pneuma = getSkill(SKILL.PNEUMA,skillInfo);
+        var suffragium = getSkill(SKILL.PNEUMA,skillInfo);
+        var impositio = getSkill(SKILL.PNEUMA,skillInfo);
+        var gloria = getSkill(SKILL.PNEUMA,skillInfo);
+        
+        //add HW HP
+        var playerRow = {
+            "values": [
+                [
+                    player.guild,
+                    player.name,
+                    player.damage_taken,
+                    blessing,
+                    agi,
+                    recovery,
+                    lex,
+                    pneuma,
+                    suffragium,
+                    impositio,
+                    gloria,
+                    player.death,
+                    player.damage_taken / player.death,
+                ]
+            ]
+        }
+
+        addRow("HP", playerRow);
 
     }
 
@@ -207,9 +252,9 @@
         }   
     }
 
-    function addCreator(player, skillInfo){
-    
+    function addCreator(player, skillInfo){        
         var acidDemostration = getSkill(SKILL.ACID_DEMOSTRATION, skillInfo);
+        var spp = getSkill(SKILL.SLIM_POTION_PITCHER, skillInfo);        
         
         if(parseInt(acidDemostration) > 0){
             //Add Chem DD
@@ -233,6 +278,19 @@
         } else{
             //Add Chem SPP
             //to-do
+            var playerRow = {
+                "values": [
+                    [
+                        player.guild,
+                        player.name,
+                        player.damage_taken,
+                        spp,
+                        player.death,
+                        player.damage_taken / player.death,
+                    ]
+                ]
+            }
+            addRow("Chem SPP", playerRow);   
         }   
     }
 
@@ -264,6 +322,21 @@
         addRow("Paladin", playerRow);        
     }
 
+    function addGypsy(player, skillInfo){
+        var playerRow = {
+            "values": [
+                [
+                    player.guild,
+                    player.name,
+                    player.damage_taken,
+                    player.damage_taken / player.death,
+                    player.death
+                ]
+            ]
+        }
+        addRow("Gypsy", playerRow);        
+    }
+
     function getPlayerRow(player){
         var playerRow = {
             "values": [
@@ -283,7 +356,7 @@
                     player.yellow_gemstone,
                     player.red_gemstone,
                     player.blue_gemstone,
-                    player.acid_demonstration,
+                    player.acid_demostration,
                     player.support_skills,
                     player.healing,
                     player.wrong_support_skills,
